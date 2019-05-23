@@ -1,12 +1,12 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 
-import { setUser } from "./store/actions";
+import { setUser, clearUser } from "./store/actions";
 import logo from "./logo.svg";
 import "./App.css";
-import Header from "./components/Header/";
 import firebase from "./config/firebase";
 import { Loader, Dimmer } from "semantic-ui-react";
+import Layout from "./components/Layout";
 // import Loader from "./components/Loader";
 
 class App extends Component {
@@ -25,6 +25,7 @@ class App extends Component {
         });
       } else {
         console.log("no user!!!!");
+        this.props.clearUser()
         this.setState({
           user: null,
           loading: false
@@ -41,7 +42,7 @@ class App extends Component {
             <Loader active size="big" content="Loading your chat" />
           </Dimmer>
         ) : (
-          <Header profilePic={user && user.photoURL} />
+          <Layout/>
         )}
       </div>
     );
@@ -50,5 +51,5 @@ class App extends Component {
 
 export default connect(
   null,
-  { setUser }
+  { setUser, clearUser }
 )(App);
