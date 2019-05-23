@@ -43,7 +43,7 @@ class Header extends Component {
           <img src={images.logo} />
         </div>
         <ul>
-          {profilePic ? (
+          {user ? (
             <li>
               <Popup
                 trigger={
@@ -80,11 +80,14 @@ class Header extends Component {
   }
 }
 
-const mapStateToProps=state=>{
+const mapStateToProps = state => {
   // console.log("state.user.current_user..",state.user.current_user.photoURL)
-  return{
+  return {
     user: state.user.current_user
-  }
-}
+  };
+};
 
-export default connect(mapStateToProps, null)(Header);
+export default connect(
+  mapStateToProps,
+  null
+)(Header);

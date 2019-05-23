@@ -12,5 +12,18 @@ code {
 }
 
 .ui.dimmer{
-  background-color: #35ace0
+  /* background-color: #35ace0 */
+}
+
+/* Message style */
+.messages {
+  height: 440px;
+  overflow-y: scroll;
+  max-width: none !important;
+}
+
+/* Self Message */
+.message__self {
+  border-left: 2px solid orange;
+  padding-left: 8px;
 }
