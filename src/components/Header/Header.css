@@ -1,0 +1,36 @@
+.header_container {
+  color: #35ace0;
+  height: 100px;
+  background-color: white;
+  -webkit-box-shadow: 0 0 10px 0 #bed2db;
+          box-shadow: 0 0 10px 0 #bed2db;
+}
+
+.header_container ul {
+  margin: 0;
+  float: right;
+  text-decoration: none;
+  list-style-type: none;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  height: 100px;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.header_container ul li {
+  padding: 10px;
+}
+
+.header_container ul li .profile_pic {
+  width: 50px;
+  height: 50px;
+  -o-object-fit: cover;
+     object-fit: cover;
+  border-radius: 50%;
+  -webkit-box-shadow: 0 0 10px 0 #bed2db;
+          box-shadow: 0 0 10px 0 #bed2db;
+}
+/*# sourceMappingURL=Header.css.map */
