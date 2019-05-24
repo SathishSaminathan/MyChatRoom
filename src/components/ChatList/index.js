@@ -11,11 +11,12 @@ class ChatList extends Component {
     firebaseProfileRef: firebase.database().ref(this.props.user.uid),
     chatList: [],
     chatTemplate: [],
-    searchKey: null
+    searchKey: "",
+    userList: []
   };
 
   componentDidMount() {
-    // this.chatListListener();
+    this.chatListListener();
   }
 
   handleChange = e => {
@@ -31,35 +32,33 @@ class ChatList extends Component {
     const { firebaseProfileRef } = this.state;
     firebaseProfileRef
       .child("messages/direct")
-      .on("child_added", snapshot => {
-        
-      });
+      .on("child_added", snapshot => {});
   };
 
   searchChatList = () => {
-    let chatList = [];
+    let userList = [];
     const { firebaseChatListRef, searchKey } = this.state;
     this.setState({
-      chatList: []
+      userList: []
     });
     if (searchKey.length == 0) {
       // this.chatListListener();
     } else {
       firebaseChatListRef
-        .orderByChild("uniqueName")
+        .orderByChild("name")
         // .startAt(`${searchKey}`)
         // .endAt(`${searchKey}\uf8ff`)
-        .equalTo(`@${searchKey}`)
+        .equalTo(`${searchKey}`)
         .on("child_added", snapshot => {
           let chat = snapshot.val();
           // console.log("snapshot.val()...", snapshot.val());
-          chatList.push(chat);
+          userList.push(chat);
           this.setState(
             {
-              chatList
+              userList
             },
             () => {
-              this.renderChatList();
+              this.renderUserList();
             }
           );
         });
@@ -68,12 +67,13 @@ class ChatList extends Component {
 
   chatListListener = () => {
     let chatList = [];
-    const { firebaseChatListRef } = this.state;
-    firebaseChatListRef.on("child_added", snapshot => {
+    const { firebaseProfileRef } = this.state;
+    firebaseProfileRef.child("messages/direct").on("child_added", snapshot => {
       let chat = snapshot.val();
-      if (chat.uid !== this.props.user.uid) {
-        chatList.push(chat);
-      }
+      // if (chat.uid !== this.props.user.uid) {
+      chatList.push(chat);
+      console.log(chatList);
+      // }
       this.setState(
         {
           chatList
@@ -85,13 +85,70 @@ class ChatList extends Component {
     });
   };
 
-  handleItemClick = (e, { name }) => this.setState({ activeItem: name });
+  // handleItemClick = (e, { name }) => this.setState({ activeItem: name });
+
+  checkUserIsFriend = chat => {
+    return chat.friendsList.indexOf(this.props.user.uid);
+  };
+
+  createMsg = chat => {
+    const { user } = this.props;
+    console.log("user...", user);
+
+    const newMessage = {
+      receiverName: chat.name,
+      receiverId: chat.uid,
+      receiverPic: chat.profilePic,
+      senderDetails: {
+        senderId: user.uid,
+        senderName: user.displayName,
+        senderPic: user.photoURL,
+        messages: "hai",
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      }
+    };
+    return newMessage;
+  };
+
+  addMeAsFriend = chat => {
+    this.state.firebaseProfileRef
+      .child(`messages/direct/${chat.uid}`)
+      .update(this.createMsg(chat));
+    let friendsList = [];
+    friendsList = chat.friendsList;
+    friendsList.push(this.props.user.uid);
+    console.log(friendsList);
+    this.state.firebaseChatListRef.child(chat.uid).update({ friendsList });
+  };
 
   renderChatList = () => {
     let chatTemplate = [];
-    const { activeItem, chatList } = this.state;
+    const { chatList } = this.state;
     chatList &&
-      chatList.map((chat, i) => {
+      this.state.chatList.map((chat,i) => {
+        console.log("chat...", chat);
+        chatTemplate.push(
+          <Menu.Item
+              name={chat.receiverId}
+              // active={activeItem === "inbox"}
+              onClick={this.handleItemClick}
+              key={i}
+            >
+              <Image src={chat.receiverPic} avatar />
+              <span>{chat.receiverName}</span>
+              {/* <Label color="blue">1</Label> */}
+            </Menu.Item>
+        )
+      });
+      return chatTemplate
+  };
+
+  renderUserList = () => {
+    console.log("renderUserList...");
+    let chatTemplate = [];
+    const { activeItem, userList } = this.state;
+    userList &&
+      userList.map((chat, i) => {
         if (chat.uid !== this.props.user.uid) {
           chatTemplate.push(
             <Menu.Item
@@ -102,7 +159,14 @@ class ChatList extends Component {
             >
               <Image src={chat.profilePic} avatar />
               <span>{chat.name}</span>
-              <Label color="blue">1</Label>
+              {/* <Label color="blue">1</Label> */}
+              {this.checkUserIsFriend(chat) === -1 && (
+                <Label color="blue">
+                  <Button color="blue" onClick={() => this.addMeAsFriend(chat)}>
+                    connect
+                  </Button>
+                </Label>
+              )}
             </Menu.Item>
           );
         }
@@ -111,7 +175,7 @@ class ChatList extends Component {
   };
 
   render() {
-    const { activeItem } = this.state;
+    const { activeItem, searchKey } = this.state;
     return (
       <React.Fragment>
         <Menu vertical size="massive" fluid>
@@ -122,7 +186,9 @@ class ChatList extends Component {
               onChange={this.handleChange}
             />
           </Menu.Item>
-          {this.renderChatList()}
+          {searchKey.length === 0
+            ? this.renderChatList()
+            : this.renderUserList()}
           {/* <Menu.Item
             name="inbox"
             active={activeItem === "inbox"}

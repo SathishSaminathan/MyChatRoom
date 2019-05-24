@@ -47,7 +47,8 @@ class Header extends Component {
       email: user.email,
       uid: user.uid,
       profilePic: user.photoURL,
-      uniqueName:""
+      uniqueName: "",
+      friendsList: ["welcome"]
     };
   };
 
