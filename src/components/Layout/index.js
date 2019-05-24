@@ -34,7 +34,7 @@ class Layout extends Component {
 const mapStateToProps = state => {
   // console.log("state.user.current_user..",state.user.current_user.photoURL)
   return {
-    user: state.user.current_user
+    user: state.user.currentUser
   };
 };
 
