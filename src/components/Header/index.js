@@ -10,16 +10,21 @@ const googleAuth = new firebase.auth.GoogleAuthProvider();
 
 class Header extends Component {
   state = {
-    buttonLoading: false
+    buttonLoading: false,
+    firebaseUserRef: firebase.database().ref("users")
   };
+  componentDidMount() {
+    // this.handleLogin();
+  }
   handleLogin = () => {
     this.setState({
       buttonLoading: true
     });
     const login = firebase.auth().signInWithPopup(googleAuth);
     login
-      .then(() => {
+      .then(user => {
         console.log("completed");
+        this.createUser(user);
         this.setState({
           buttonLoading: false
         });
@@ -31,8 +36,26 @@ class Header extends Component {
         });
       });
   };
+
   handleLogout = () => {
     firebase.auth().signOut();
+  };
+
+  userValue = user => {
+    return {
+      name: user.displayName,
+      email: user.email,
+      uid: user.uid,
+      profilePic: user.photoURL,
+      uniqueName:""
+    };
+  };
+
+  createUser = ({ user }) => {
+    const { firebaseUserRef } = this.state;
+    console.log(user);
+    firebaseUserRef.child(user.uid).set(this.userValue(user));
+    console.log("user updated!!", user);
   };
   render() {
     const { buttonLoading } = this.state;
@@ -83,7 +106,7 @@ class Header extends Component {
 const mapStateToProps = state => {
   // console.log("state.user.current_user..",state.user.current_user.photoURL)
   return {
-    user: state.user.current_user
+    user: state.user.currentUser
   };
 };
 
