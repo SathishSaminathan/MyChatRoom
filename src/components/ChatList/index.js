@@ -1,36 +1,47 @@
 import React, { Component } from "react";
 import { Input, Label, Menu, Image, Button } from "semantic-ui-react";
+import _ from "lodash";
 
 import { connect } from "react-redux";
 import firebase from "../../config/firebase";
 
 class ChatList extends Component {
+  constructor(props) {
+    super(props);
+  }
+
   state = {
     activeItem: "inbox",
     firebaseChatListRef: firebase.database().ref("users"),
-    firebaseProfileRef: firebase.database().ref(this.props.user.uid),
+    firebaseProfileRef: firebase.database(),
+    messagesRef: firebase.database().ref("messages"),
     chatList: [],
     chatTemplate: [],
     searchKey: "",
-    userList: []
+    userList: [],
+    key: null,
+    searchLoading: false
   };
 
   componentDidMount() {
     this.chatListListener();
   }
 
-  handleChange = e => {
+  handleChange = _.debounce(e => {
+    console.log(this.state.searchKey);
     this.setState(
       {
-        searchKey: e.target.value
+        searchKey: e.target.value,
+        searchLoading: false
       },
       () => this.searchChatList()
     );
-  };
+  }, 1500);
 
   getTheUserList = () => {
     const { firebaseProfileRef } = this.state;
     firebaseProfileRef
+      .ref(this.props.user.uid)
       .child("messages/direct")
       .on("child_added", snapshot => {});
   };
@@ -45,13 +56,12 @@ class ChatList extends Component {
       // this.chatListListener();
     } else {
       firebaseChatListRef
-        .orderByChild("name")
+        .orderByChild("displayName")
         // .startAt(`${searchKey}`)
         // .endAt(`${searchKey}\uf8ff`)
         .equalTo(`${searchKey}`)
         .on("child_added", snapshot => {
           let chat = snapshot.val();
-          // console.log("snapshot.val()...", snapshot.val());
           userList.push(chat);
           this.setState(
             {
@@ -68,79 +78,116 @@ class ChatList extends Component {
   chatListListener = () => {
     let chatList = [];
     const { firebaseProfileRef } = this.state;
-    firebaseProfileRef.child("messages/direct").on("child_added", snapshot => {
-      let chat = snapshot.val();
-      // if (chat.uid !== this.props.user.uid) {
-      chatList.push(chat);
-      console.log(chatList);
-      // }
-      this.setState(
-        {
-          chatList
-        },
-        () => {
-          this.renderChatList();
-        }
-      );
-    });
+    firebaseProfileRef
+      .ref(this.props.user.uid)
+      .child("messages/direct")
+      .on("child_added", snapshot => {
+        let chat = snapshot.val();
+        // if (chat.uid !== this.props.user.uid) {
+        chatList.push(chat);
+        console.log(chatList);
+        // }
+        this.setState(
+          {
+            chatList
+          },
+          () => {
+            this.renderChatList();
+          }
+        );
+      });
   };
 
-  // handleItemClick = (e, { name }) => this.setState({ activeItem: name });
+  handleItemClick = (e, { name }) => {
+    this.setState({ activeItem: name }, () =>
+      console.log("item Clicked!!!", name)
+    );
+    this.props.activeMessage(name);
+  };
 
   checkUserIsFriend = chat => {
     return chat.friendsList.indexOf(this.props.user.uid);
   };
 
-  createMsg = chat => {
+  createMsg = (chat, message, key) => {
+    const { firebaseProfileRef } = this.state;
     const { user } = this.props;
-    console.log("user...", user);
+    let newMessage = null;
 
-    const newMessage = {
-      receiverName: chat.name,
-      receiverId: chat.uid,
-      receiverPic: chat.profilePic,
-      senderDetails: {
-        senderId: user.uid,
-        senderName: user.displayName,
-        senderPic: user.photoURL,
-        messages: "hai",
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-      }
-    };
+    this.setState({ key }, console.log("this.state.key", this.state.key));
+    if (message === "ownMessage") {
+      newMessage = {
+        receiverName: chat.displayName,
+        receiverId: chat.uid,
+        receiverPic: chat.photoURL,
+        key: key,
+        senderDetails: {
+          senderId: user.uid,
+          senderName: user.displayName,
+          senderPic: user.photoURL,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        }
+      };
+    } else {
+      newMessage = {
+        receiverName: user.displayName,
+        receiverId: user.uid,
+        receiverPic: user.photoURL,
+        key: key,
+        senderDetails: {
+          senderId: chat.uid,
+          senderName: chat.displayName,
+          senderPic: chat.photoURL,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        }
+      };
+    }
+
     return newMessage;
   };
 
   addMeAsFriend = chat => {
-    this.state.firebaseProfileRef
+    const { messagesRef, firebaseProfileRef } = this.state;
+    const key = firebaseProfileRef.ref(this.props.user.uid).push().key;
+    firebaseProfileRef
+      .ref(this.props.user.uid)
       .child(`messages/direct/${chat.uid}`)
-      .update(this.createMsg(chat));
+      .update(this.createMsg(chat, "ownMessage", key));
+
+    firebaseProfileRef
+      .ref(chat.uid)
+      .child(`messages/direct/${this.props.user.uid}`)
+      .update(this.createMsg(chat, "", key));
+
+    // messagesRef.push(key).set({ message: "hai" });
     let friendsList = [];
     friendsList = chat.friendsList;
     friendsList.push(this.props.user.uid);
     console.log(friendsList);
     this.state.firebaseChatListRef.child(chat.uid).update({ friendsList });
+    this.setState({ searchKey: "" });
   };
 
   renderChatList = () => {
     let chatTemplate = [];
-    const { chatList } = this.state;
+    const { chatList, activeItem } = this.state;
     chatList &&
-      this.state.chatList.map((chat,i) => {
+      this.state.chatList.map((chat, i) => {
         console.log("chat...", chat);
         chatTemplate.push(
           <Menu.Item
-              name={chat.receiverId}
-              // active={activeItem === "inbox"}
-              onClick={this.handleItemClick}
-              key={i}
-            >
-              <Image src={chat.receiverPic} avatar />
-              <span>{chat.receiverName}</span>
-              {/* <Label color="blue">1</Label> */}
-            </Menu.Item>
-        )
+            name={chat.key}
+            active={activeItem === chat.key}
+            onClick={this.handleItemClick}
+            key={i}
+          >
+            <Image src={chat.receiverPic} avatar />
+            <span>{chat.receiverName}</span>
+            {/* <Label color="blue">1</Label> */}
+          </Menu.Item>
+        );
       });
-      return chatTemplate
+    return chatTemplate;
   };
 
   renderUserList = () => {
@@ -157,8 +204,8 @@ class ChatList extends Component {
               onClick={this.handleItemClick}
               key={i}
             >
-              <Image src={chat.profilePic} avatar />
-              <span>{chat.name}</span>
+              <Image src={chat.photoURL} avatar />
+              <span>{chat.displayName}</span>
               {/* <Label color="blue">1</Label> */}
               {this.checkUserIsFriend(chat) === -1 && (
                 <Label color="blue">
@@ -175,7 +222,7 @@ class ChatList extends Component {
   };
 
   render() {
-    const { activeItem, searchKey } = this.state;
+    const { activeItem, searchKey, searchLoading } = this.state;
     return (
       <React.Fragment>
         <Menu vertical size="massive" fluid>
@@ -183,48 +230,18 @@ class ChatList extends Component {
             <Input
               icon="search"
               placeholder="Search contact..."
-              onChange={this.handleChange}
+              onChange={e => {
+                e.persist();
+                this.handleChange(e);
+                this.setState({ searchKey:e.target.value,searchLoading: true });
+              }}
+              value={searchKey}
+              loading={searchLoading}
             />
           </Menu.Item>
           {searchKey.length === 0
             ? this.renderChatList()
             : this.renderUserList()}
-          {/* <Menu.Item
-            name="inbox"
-            active={activeItem === "inbox"}
-            onClick={this.handleItemClick}
-          >
-            <Image
-              src="https://randomuser.me/api/portraits/men/11.jpg"
-              avatar
-            />
-            <span>Username</span>
-            <Label color="blue">1</Label>
-          </Menu.Item>
-          <Menu.Item
-            name="spam"
-            active={activeItem === "spam"}
-            onClick={this.handleItemClick}
-          >
-            <Image
-              src="https://randomuser.me/api/portraits/men/11.jpg"
-              avatar
-            />
-            <span>Tamil</span>
-            <Label color="blue">1</Label>
-          </Menu.Item>
-          <Menu.Item
-            name="updates"
-            active={activeItem === "updates"}
-            onClick={this.handleItemClick}
-          >
-            <Image
-              src="https://randomuser.me/api/portraits/men/11.jpg"
-              avatar
-            />
-            <span>Naveen</span>
-            <Label color="blue">1</Label>
-          </Menu.Item> */}
         </Menu>
         <Button primary>ADD GROUP</Button>
       </React.Fragment>

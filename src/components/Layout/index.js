@@ -2,12 +2,25 @@ import React, { Component } from "react";
 import { Grid, GridRow, GridColumn } from "semantic-ui-react";
 import { connect } from "react-redux";
 
-import "./Layout.css";
 import Header from "../Header";
 import ChatList from "../ChatList";
 import Messages from "../Messages";
+import { setActiveMessage } from "../../store/actions";
+import "./Layout.css";
 
 class Layout extends Component {
+  state = {
+    messageId: null
+  };
+  activeMessage = messageId => {
+    this.setState(
+      {
+        messageId
+      },
+      () => this.props.setActiveMessage(messageId)
+    );
+  };
+
   render() {
     const { user } = this.props;
     return (
@@ -17,11 +30,11 @@ class Layout extends Component {
           <div style={{ padding: "10px" }}>
             <Grid>
               <GridRow>
-                <GridColumn mobile={16} computer={5}>
-                  <ChatList />
+                <GridColumn mobile={8} computer={5}>
+                  <ChatList activeMessage={this.activeMessage} />
                 </GridColumn>
-                <GridColumn width={11}>
-                  <Messages />
+                <GridColumn computer={8}>
+                  <Messages user={user} messageId={this.state.messageId} />
                 </GridColumn>
               </GridRow>
             </Grid>
@@ -32,13 +45,13 @@ class Layout extends Component {
   }
 }
 const mapStateToProps = state => {
-  // console.log("state.user.current_user..",state.user.current_user.photoURL)
   return {
-    user: state.user.currentUser
+    user: state.user.currentUser,
+    messageId: state.user.currentUser&& state.user.currentUser.messageId
   };
 };
 
 export default connect(
   mapStateToProps,
-  null
+  { setActiveMessage }
 )(Layout);
