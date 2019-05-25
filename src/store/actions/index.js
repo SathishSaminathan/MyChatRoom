@@ -1,4 +1,4 @@
-import { SET_USER, CLEAR_USER } from "./types";
+import { SET_USER, CLEAR_USER, ACTIVE_MESSAGE } from "./types";
 
 export const setUser = user => {
   return {
@@ -9,8 +9,15 @@ export const setUser = user => {
   };
 };
 
-export const clearUser =()=>{
-  return{
-    type:CLEAR_USER,
-  }
-}
+export const clearUser = () => {
+  return {
+    type: CLEAR_USER
+  };
+};
+
+export const setActiveMessage = (messageId) => {
+  return {
+    type: ACTIVE_MESSAGE,
+    messageId:messageId
+  };
+};

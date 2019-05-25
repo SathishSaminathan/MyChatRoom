@@ -43,10 +43,10 @@ class Header extends Component {
 
   userValue = user => {
     return {
-      name: user.displayName,
+      displayName: user.displayName,
       email: user.email,
       uid: user.uid,
-      profilePic: user.photoURL,
+      photoURL: user.photoURL,
       uniqueName: "",
       friendsList: ["welcome"]
     };
