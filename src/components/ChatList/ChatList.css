@@ -1,0 +1,20 @@
+.avatar {
+  display: inline-block;
+  margin: 0 10px;
+  position: relative;
+}
+
+.avatar .status {
+  width: 10px;
+  height: 10px;
+  background-color: red;
+  position: absolute;
+  bottom: 0;
+  right: 0em;
+  border-radius: 50%;
+}
+
+.avatar .status.active {
+  background-color: green;
+}
+/*# sourceMappingURL=ChatList.css.map */
