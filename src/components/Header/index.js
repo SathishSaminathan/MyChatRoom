@@ -11,7 +11,8 @@ const googleAuth = new firebase.auth.GoogleAuthProvider();
 class Header extends Component {
   state = {
     buttonLoading: false,
-    firebaseUserRef: firebase.database().ref("users")
+    firebaseUserRef: firebase.database().ref("users"),
+    presenceRef: firebase.database().ref("presence"),
   };
   componentDidMount() {
     // this.handleLogin();
@@ -38,6 +39,7 @@ class Header extends Component {
   };
 
   handleLogout = () => {
+    this.state.presenceRef.child(this.props.user.uid).remove();
     firebase.auth().signOut();
   };
 

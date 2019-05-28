@@ -1,5 +1,7 @@
 import React, { Component } from "react";
 import { Segment, Input, Button } from "semantic-ui-react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import firebase from "../../config/firebase";
 
@@ -8,6 +10,8 @@ class MessageForm extends Component {
     message: "",
     firebaseMessagesRef: firebase.database().ref("message")
   };
+
+  notifyA = () => toast('Please select the chat!!');
 
   createMessage = user => {
     const { message } = this.state;
@@ -32,6 +36,8 @@ class MessageForm extends Component {
         .then(() => {
           this.setState({ message: "" });
         });
+    } else {
+      this.notifyA();
     }
   };
   render() {
@@ -39,6 +45,9 @@ class MessageForm extends Component {
     const { user, messageId } = this.props;
     return (
       <Segment className="message__form">
+        <ToastContainer
+          position={toast.POSITION.TOP_RIGHT}
+        />
         <Input
           fluid
           name="Message"

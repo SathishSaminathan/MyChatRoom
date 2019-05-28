@@ -62,12 +62,17 @@ class Messages extends Component {
   displayMessages = () => {
     let messageTemplete = [];
     const { messages } = this.state;
-    const {user}= this.props
+    const { user } = this.props;
     console.log("messagessss..", messages);
     messages.map((message, i) => {
       console.log("messageContent...", message);
       messageTemplete.push(
-        <Message user={user} modalToggle={this.modalToggle} message={message} key={i} />
+        <Message
+          user={user}
+          modalToggle={this.modalToggle}
+          message={message}
+          key={i}
+        />
       );
     });
     return messageTemplete;
@@ -79,7 +84,7 @@ class Messages extends Component {
     console.log("messageId...", messageId);
     return (
       <React.Fragment>
-        <MessageHeader />
+        {/* <MessageHeader /> */}
         <Segment>
           <Comment.Group className="messages">
             {/* Messages */}

@@ -4,6 +4,7 @@ import _ from "lodash";
 
 import { connect } from "react-redux";
 import firebase from "../../config/firebase";
+import "./ChatList.css";
 
 class ChatList extends Component {
   constructor(props) {
@@ -15,17 +16,39 @@ class ChatList extends Component {
     firebaseChatListRef: firebase.database().ref("users"),
     firebaseProfileRef: firebase.database(),
     messagesRef: firebase.database().ref("messages"),
+    presenceRef: firebase.database().ref("presence"),
     chatList: [],
     chatTemplate: [],
     searchKey: "",
     userList: [],
     key: null,
-    searchLoading: false
+    searchLoading: false,
+    presenceList: []
   };
 
   componentDidMount() {
     this.chatListListener();
+    this.presenceListener();
   }
+
+  presenceListener = () => {
+    let presenceList = [];
+    this.state.presenceRef.on("child_added", snapshot => {
+      presenceList.push(snapshot.val());
+      console.log("console beffore push", this.state.presenceList);
+      this.setState({ presenceList }, () =>
+        console.log("child_added state data...", this.state.presenceList)
+      );
+    });
+    this.state.presenceRef.on("child_removed", snapshot => {
+      let remove = snapshot.val();
+      let filter = presenceList.filter(presenceList => {
+        return presenceList.uid !== remove.uid;
+      });
+      this.setState({ presenceList: filter });
+      console.log(" child_removed state data...", this.state.presenceList);
+    });
+  };
 
   handleChange = _.debounce(e => {
     console.log(this.state.searchKey);
@@ -38,13 +61,13 @@ class ChatList extends Component {
     );
   }, 1500);
 
-  getTheUserList = () => {
-    const { firebaseProfileRef } = this.state;
-    firebaseProfileRef
-      .ref(this.props.user.uid)
-      .child("messages/direct")
-      .on("child_added", snapshot => {});
-  };
+  // getTheUserList = () => {
+  //   const { firebaseProfileRef } = this.state;
+  //   firebaseProfileRef
+  //     .ref(this.props.user.uid)
+  //     .child("messages/direct")
+  //     .on("child_added", snapshot => {});
+  // };
 
   searchChatList = () => {
     let userList = [];
@@ -163,17 +186,42 @@ class ChatList extends Component {
     let friendsList = [];
     friendsList = chat.friendsList;
     friendsList.push(this.props.user.uid);
-    console.log(friendsList);
     this.state.firebaseChatListRef.child(chat.uid).update({ friendsList });
+    
     this.setState({ searchKey: "" });
   };
 
   renderChatList = () => {
     let chatTemplate = [];
     const { chatList, activeItem } = this.state;
+
+    const createObj = (uid, status) => {
+      return {
+        uid: uid,
+        status: status
+      };
+    };
+
+    const statusRef = this.state.presenceRef.child(this.props.user.uid);
+    statusRef.set(createObj(this.props.user.uid, true));
+    // statusRef.onDisconnect().set(createObj(this.props.user.uid, false));
+    statusRef.onDisconnect().remove();
+
     chatList &&
       this.state.chatList.map((chat, i) => {
-        console.log("chat...", chat);
+        // console.log("chat...", chat);
+        // let obj = this.state.presenceList.find(x => x.uid === chat.receiverId);
+        // let index = this.state.presenceList.indexOf(obj);
+        // // let status=false
+        // // if(index===1){
+        // //   this.state.presenceList[index]
+        // // }
+        // console.log("obj...", obj);
+        // console.log("index...", index);
+        let found = this.state.presenceList.filter(
+          presenceList => presenceList.uid === chat.receiverId
+        );
+        console.log("found...", found.length);
         chatTemplate.push(
           <Menu.Item
             name={chat.key}
@@ -181,9 +229,12 @@ class ChatList extends Component {
             onClick={this.handleItemClick}
             key={i}
           >
-            <Image src={chat.receiverPic} avatar />
+            <div className="avatar">
+              <Image src={chat.receiverPic} avatar />
+              <span className={`status ${found.length >= 1 && "active"}`} />
+            </div>
             <span>{chat.receiverName}</span>
-            {/* <Label color="blue">1</Label> */}
+            {/* {index === 1 && <Label color="blue">1</Label>} */}
           </Menu.Item>
         );
       });
@@ -233,7 +284,10 @@ class ChatList extends Component {
               onChange={e => {
                 e.persist();
                 this.handleChange(e);
-                this.setState({ searchKey:e.target.value,searchLoading: true });
+                this.setState({
+                  searchKey: e.target.value,
+                  searchLoading: true
+                });
               }}
               value={searchKey}
               loading={searchLoading}
